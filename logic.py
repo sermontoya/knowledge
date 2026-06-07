@@ -241,6 +241,44 @@ class Biconditional(Sentence):
     def symbols(self):
         return set.union(self.left.symbols(), self.right.symbols())
 
+class Xor(Sentence):
+    def __init__(self, *disjuncts):
+        for disjunct in disjuncts:
+            Sentence.validate(disjunct)
+        self.disjuncts = list(disjuncts)
+
+    def __eq__(self, other):
+        return isinstance(other, Or) and self.disjuncts == other.disjuncts
+
+    def __hash__(self):
+        return hash(("or", tuple(hash(disjunct) for disjunct in self.disjuncts)))
+
+    def __repr__(self):
+        disjuncts = ", ".join([str(disjunct) for disjunct in self.disjuncts])
+        return f"Or({disjuncts})"
+
+    def add(self, disjunct):
+        Sentence.validate(disjunct)
+        self.disjuncts.append(disjunct)
+
+    def evaluate(self, model):
+        return sum(disjunct.evaluate(model) for disjunct in self.disjuncts)
+
+    def formula(self):
+        if len(self.disjuncts) == 1:
+            return self.disjuncts[0].formula()
+        return " ⊻ ".join(
+            [Sentence.parenthesize(disjunct.formula()) for disjunct in self.disjuncts]
+        )
+
+    def symbols(self):
+        return (
+            set.union(*[disjunct.symbols() for disjunct in self.disjuncts])
+            if self.disjuncts
+            else set()
+        )
+
+
 
 def model_check(knowledge, query):
     """Checks if knowledge base entails query."""
